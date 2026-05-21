@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>初步評估同步教學系統</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ============= 啟動頁 ============= -->
+  <div id="view-home" class="view">
+    <div class="home-card">
+      <h1>初步評估同步教學系統</h1>
+      <p class="subtitle">初級救護技術員 · 創傷與非創傷初步評估</p>
+
+      <div class="role-grid role-grid-4">
+        <button class="role-btn role-teach" onclick="enterRole('teach')">
+          <div class="role-icon">🎤</div>
+          <div class="role-title">教官 · 開始上課</div>
+          <div class="role-desc">簡潔戳戳樂控制台</div>
+        </button>
+        <button class="role-btn role-admin" onclick="enterRole('admin')">
+          <div class="role-icon">⚙️</div>
+          <div class="role-title">教官 · 後台管理</div>
+          <div class="role-desc">編輯內容、上傳素材</div>
+        </button>
+        <button class="role-btn role-bigscreen" onclick="enterRole('bigscreen')">
+          <div class="role-icon">📺</div>
+          <div class="role-title">大螢幕 / 投影</div>
+          <div class="role-desc">教室電視專用、會出聲</div>
+        </button>
+        <button class="role-btn role-student" onclick="promptStudentJoin()">
+          <div class="role-icon">📱</div>
+          <div class="role-title">我是學員</div>
+          <div class="role-desc">個人手機、預設靜音</div>
+        </button>
+      </div>
+
+      <div class="home-footer">
+        <small id="sync-mode-indicator">同步模式偵測中...</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= 教官端 ============= -->
+  <div id="view-instructor" class="view hidden">
+    <header class="topbar">
+      <div class="topbar-left">
+        <strong>⚙️ 後台管理</strong>
+        <span class="room-badge">教室代碼：<code id="instructor-room-code">----</code></span>
+        <button class="ghost-btn" onclick="showJoinInfo()">學員加入資訊</button>
+      </div>
+      <div class="topbar-right">
+        <button class="voice-lock-btn" onclick="toggleStudentVoiceLock()" title="統一控制所有學員的語音播放">
+          <span class="lock-icon">🔒</span>
+          <span class="lock-label">學員語音：鎖定</span>
+        </button>
+        <button class="ghost-btn" onclick="exportData()">匯出</button>
+        <button class="ghost-btn" onclick="importData()">匯入</button>
+        <input type="file" id="import-file" accept=".json" hidden />
+        <button class="ctrl-btn primary" onclick="switchToTeach()">🎤 回到課堂</button>
+        <button class="ghost-btn danger" onclick="leaveRoom()">離開</button>
+      </div>
+    </header>
+
+    <div class="instructor-layout">
+      <!-- 左側：步驟列表 -->
+      <aside class="sidebar">
+        <div class="protocol-tabs">
+          <button class="tab-btn active" data-protocol="medical" onclick="switchProtocol('medical')">非創傷</button>
+          <button class="tab-btn" data-protocol="trauma" onclick="switchProtocol('trauma')">創傷</button>
+        </div>
+        <ol class="step-list" id="step-list"></ol>
+      </aside>
+
+      <!-- 中間：當前步驟詳細 -->
+      <main class="instructor-main">
+        <div id="step-detail" class="step-detail">
+          <div class="empty-hint">👈 請從左側選擇步驟開始</div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 控制條 -->
+    <footer class="control-bar">
+      <button id="btn-prev" class="ctrl-btn" onclick="prevStep()">◀ 上一步</button>
+      <button id="btn-play-voice" class="ctrl-btn primary" onclick="toggleVoice()">🔊 播放語音</button>
+      <button id="btn-stop-broadcast" class="ctrl-btn" onclick="toggleBroadcast()">📡 廣播中</button>
+      <button id="btn-next" class="ctrl-btn" onclick="nextStep()">下一步 ▶</button>
+    </footer>
+  </div>
+
+  <!-- ============= 教官上課模式 ============= -->
+  <div id="view-teach" class="view hidden">
+    <header class="teach-topbar">
+      <div class="teach-topbar-left">
+        <span class="room-pill">📡 <code id="teach-room-code">----</code></span>
+        <div class="teach-protocol-switch">
+          <button class="protocol-pill active" data-protocol="medical" onclick="teachSwitchProtocol('medical')">非創傷</button>
+          <button class="protocol-pill" data-protocol="trauma" onclick="teachSwitchProtocol('trauma')">創傷</button>
+        </div>
+      </div>
+      <div class="teach-topbar-right">
+        <button class="voice-lock-btn" onclick="toggleStudentVoiceLock()" title="統一控制所有學員的語音播放">
+          <span class="lock-icon">🔒</span>
+          <span class="lock-label">學員語音：鎖定</span>
+        </button>
+        <button class="ghost-btn" onclick="showJoinInfo()">學員加入</button>
+        <button class="ghost-btn" onclick="switchToAdmin()">⚙️ 後台</button>
+        <button class="ghost-btn danger" onclick="leaveRoom()">離開</button>
+      </div>
+    </header>
+
+    <!-- 純戳戳樂控制台（口述內容只在學員端顯示） -->
+    <nav class="teach-step-dock teach-step-dock-full" id="teach-step-dock"></nav>
+
+  </div>
+
+  <!-- ============= 學員端 ============= -->
+  <div id="view-student" class="view hidden">
+    <header class="topbar student-topbar">
+      <div class="topbar-left">
+        <span class="room-badge">教室：<code id="student-room-code">----</code></span>
+        <span id="sync-status" class="sync-status">⏳ 等待教官開始...</span>
+      </div>
+      <div class="topbar-right">
+        <button class="ghost-btn danger" onclick="leaveRoom()">離開</button>
+      </div>
+    </header>
+
+    <main id="student-main" class="student-main">
+      <div class="empty-hint student-waiting">
+        <div class="big-icon">📡</div>
+        <div>等待教官開始下一個動作</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============= 學員加入彈窗 ============= -->
+  <div id="modal-join" class="modal hidden">
+    <div class="modal-card">
+      <h2>加入教室</h2>
+      <input type="text" id="join-room-input" placeholder="輸入 4 位教室代碼" maxlength="4" />
+      <div class="modal-actions">
+        <button class="ctrl-btn" onclick="closeModal('modal-join')">取消</button>
+        <button class="ctrl-btn primary" onclick="confirmJoin()">加入</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= 學員加入資訊彈窗 ============= -->
+  <div id="modal-join-info" class="modal hidden">
+    <div class="modal-card wide">
+      <h2>請學員以下列方式加入</h2>
+      <div class="join-info-grid">
+        <div>
+          <h3>方法一：掃描 QR Code</h3>
+          <div id="qr-container" class="qr-box">
+            <div class="qr-fallback">需要 qrcode.js 才能顯示 QR<br><small>請改用方法二</small></div>
+          </div>
+        </div>
+        <div>
+          <h3>方法二：手動輸入</h3>
+          <p>請學員開啟此網址：</p>
+          <code class="url-display" id="join-url">-</code>
+          <button class="ctrl-btn" onclick="copyJoinUrl()">複製網址</button>
+          <p style="margin-top:1rem">或選擇「我是學員」後輸入教室代碼：</p>
+          <div class="big-code" id="big-room-code">----</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="ctrl-btn primary" onclick="closeModal('modal-join-info')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= 步驟編輯彈窗 ============= -->
+  <div id="modal-edit-media" class="modal hidden">
+    <div class="modal-card wide">
+      <h2>編輯步驟：<span id="edit-step-title-display">-</span></h2>
+
+      <div class="form-row">
+        <label>步驟標題</label>
+        <input type="text" id="edit-title" />
+      </div>
+
+      <div class="form-row">
+        <label>口述(動作)內容（每行一條）</label>
+        <textarea id="edit-key-points" rows="5" placeholder="一行一個要點"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>學員常見錯誤（每行一條）</label>
+        <textarea id="edit-common-errors" rows="4" placeholder="一行一個常見錯誤"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>語音腳本（按播放鍵朗讀，可即時修改）</label>
+        <textarea id="edit-voice-script" rows="3"></textarea>
+      </div>
+
+      <hr style="border-color: var(--border); margin: 1.5rem 0;" />
+
+      <div class="form-row">
+        <label>圖片（jpg / png / webp）</label>
+        <div id="media-image-preview" class="media-preview"></div>
+        <input type="file" id="upload-image" accept="image/*" onchange="handleMediaUpload('image')" />
+        <button class="ghost-btn" onclick="clearMedia('image')">清除圖片</button>
+      </div>
+
+      <div class="form-row">
+        <label>影片（mp4 / webm）</label>
+        <div id="media-video-preview" class="media-preview"></div>
+        <input type="file" id="upload-video" accept="video/*" onchange="handleMediaUpload('video')" />
+        <button class="ghost-btn" onclick="clearMedia('video')">清除影片</button>
+      </div>
+
+      <div class="modal-actions">
+        <button class="ghost-btn danger" onclick="deleteCurrentEditingStep()" style="margin-right:auto">🗑 刪除此步驟</button>
+        <button class="ghost-btn" onclick="resetStepToDefault()">還原預設</button>
+        <button class="ctrl-btn" onclick="closeModal('modal-edit-media')">取消</button>
+        <button class="ctrl-btn primary" onclick="saveStepEdits()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK（compat 版本，不需要 module bundler） -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+
+  <script src="js/content-sync.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
