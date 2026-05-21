@@ -371,8 +371,8 @@ async function renderStepDetail() {
       <div class="detail-card media">
         <h3>📷 素材</h3>
         <div class="media-row">
-          <div class="media-slot ${imageBlob ? 'has-content' : ''}">${imageHTML}</div>
-          <div class="media-slot ${videoBlob ? 'has-content' : ''}">${videoHTML}</div>
+          <div class="media-slot ${imageUrl ? 'has-content' : ''}">${imageHTML}</div>
+          <div class="media-slot ${videoUrl ? 'has-content' : ''}">${videoHTML}</div>
         </div>
         <button class="ctrl-btn primary media-edit-btn" onclick="openMediaEditor('${step.id}')">編輯素材</button>
       </div>
