@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "lastUpdated": "2026-05-21",
+  "version": "1.1.0",
+  "lastUpdated": "2026-05-22",
   "protocols": {
     "medical": {
       "id": "medical",
@@ -12,6 +12,7 @@
           "id": "m01",
           "order": 1,
           "title": "現場安全評估",
+          "category": "general",
           "voiceScript": "進入現場前，先停下、看、聽。確認沒有交通、電線、瓦斯、暴力、動物等危險，並評估病患數量與是否需要支援。",
           "keyPoints": [
             "在現場外停留 3 秒目視掃描",
@@ -30,6 +31,7 @@
           "id": "m02",
           "order": 2,
           "title": "個人防護裝備（BSI/PPE）",
+          "category": "general",
           "voiceScript": "接觸病患前完成 BSI。手套必須穿戴完整，依現場狀況加上口罩、護目鏡或防護衣。",
           "keyPoints": [
             "手套套到袖口、不可外翻",
@@ -48,6 +50,7 @@
           "id": "m03",
           "order": 3,
           "title": "一般印象",
+          "category": "general",
           "voiceScript": "接近病患的 5 公尺內，快速形成一般印象：病患的年齡、性別、姿勢、外觀、明顯異常與環境線索。",
           "keyPoints": [
             "在 3–5 秒內形成印象並口頭說出",
@@ -66,6 +69,7 @@
           "id": "m04",
           "order": 4,
           "title": "自我介紹與徵求同意",
+          "category": "general",
           "voiceScript": "蹲下與病患同高，自我介紹身分與目的，徵求同意後再進行評估。對意識不清者，以隱含同意處理。",
           "keyPoints": [
             "蹲下、視線同高、語氣平穩",
@@ -84,6 +88,7 @@
           "id": "m05",
           "order": 5,
           "title": "意識評估（AVPU）",
+          "category": "neuro",
           "voiceScript": "依序評估：A 警覺、V 對聲音反應、P 對疼痛反應、U 無反應。先呼喚，再以肩部輕拍刺激。",
           "keyPoints": [
             "雙手輕拍雙肩、大聲呼喚『先生／小姐你還好嗎？』",
@@ -102,6 +107,7 @@
           "id": "m06",
           "order": 6,
           "title": "氣道（A）",
+          "category": "airway",
           "voiceScript": "評估氣道是否通暢。對意識清醒者觀察說話流暢度；意識不清者使用壓額抬下巴法打開氣道。",
           "keyPoints": [
             "意識清楚：能對答即氣道通暢",
@@ -119,7 +125,8 @@
         {
           "id": "m07",
           "order": 7,
-          "title": "呼吸（B）— 看、聽、感覺",
+          "title": "呼吸(B) — 看、聽、感覺",
+          "category": "breathing",
           "voiceScript": "在 10 秒內，看胸部起伏、聽呼吸音、感覺氣流。評估速率、深度、規律、努力程度。",
           "keyPoints": [
             "臉貼近病患口鼻，眼看胸腹",
@@ -138,6 +145,7 @@
           "id": "m08",
           "order": 8,
           "title": "循環（C）— 脈搏、皮膚、出血",
+          "category": "circulation",
           "voiceScript": "成人觸摸頸動脈、嬰兒觸摸肱動脈。同時觀察皮膚顏色、溫度、濕度，並掃視全身有無明顯出血。",
           "keyPoints": [
             "頸動脈：氣管旁 2 指、不可同時雙側",
@@ -156,6 +164,7 @@
           "id": "m09",
           "order": 9,
           "title": "重大傷病判斷",
+          "category": "general",
           "voiceScript": "綜合 ABC 與一般印象，判斷是否為重大傷病。包含意識改變、呼吸窘迫、休克徵象、胸痛、嚴重過敏、中風徵象等。",
           "keyPoints": [
             "明確說出『重大／非重大』",
@@ -174,6 +183,7 @@
           "id": "m10",
           "order": 10,
           "title": "決定運送優先順序",
+          "category": "general",
           "voiceScript": "依重大傷病判斷決定運送優先。重大者立即上擔架、邊運送邊評估；非重大者繼續進行重點檢查與病史詢問。",
           "keyPoints": [
             "重大：load and go",
@@ -200,6 +210,7 @@
           "id": "t01",
           "order": 1,
           "title": "現場安全評估",
+          "category": "general",
           "voiceScript": "創傷現場特別注意交通、油料、玻璃、墜物、施暴者是否仍在現場。",
           "keyPoints": [
             "車禍現場：注意來車、車輛穩定性",
@@ -218,6 +229,7 @@
           "id": "t02",
           "order": 2,
           "title": "個人防護裝備（BSI/PPE）",
+          "category": "general",
           "voiceScript": "創傷出血量大，建議雙層手套、護目鏡、口罩，必要時穿防護衣。",
           "keyPoints": [
             "雙層手套（外層污染可脫掉繼續作業）",
@@ -236,6 +248,7 @@
           "id": "t03",
           "order": 3,
           "title": "受傷機轉判斷（MOI）",
+          "category": "general",
           "voiceScript": "進入現場觀察車輛變形、墜落高度、被撞物體、撞擊方向。MOI 決定創傷指數與運送決策。",
           "keyPoints": [
             "車禍：車輛變形量、安全氣囊、安全帶痕跡",
@@ -254,6 +267,7 @@
           "id": "t04",
           "order": 4,
           "title": "一般印象",
+          "category": "general",
           "voiceScript": "創傷病患一般印象需注意姿勢、明顯變形、出血部位、活動度。",
           "keyPoints": [
             "病患姿勢（不要移動，先觀察）",
@@ -272,6 +286,7 @@
           "id": "t05",
           "order": 5,
           "title": "徒手頸椎固定",
+          "category": "neuro",
           "voiceScript": "懷疑頸椎傷害時，第一動作就是徒手頸椎固定。雙手放在頭部兩側、拇指在顴骨、其餘手指支撐枕部，維持中立位。",
           "keyPoints": [
             "雙手對稱包覆頭部",
@@ -292,6 +307,7 @@
           "id": "t06",
           "order": 6,
           "title": "意識評估（AVPU）",
+          "category": "neuro",
           "voiceScript": "在頸椎固定下評估意識。輕拍肩部、呼喚病患。對聲音無反應時施予痛刺激。",
           "keyPoints": [
             "頸椎固定者持續不動",
@@ -310,6 +326,7 @@
           "id": "t07",
           "order": 7,
           "title": "氣道（A）— 注意頸椎",
+          "category": "airway",
           "voiceScript": "創傷病患禁用壓額抬下巴。改用下顎推擠法（jaw thrust）打開氣道，維持頸椎中立位。",
           "keyPoints": [
             "雙手放下顎角後方",
@@ -330,6 +347,7 @@
           "id": "t08",
           "order": 8,
           "title": "呼吸（B）",
+          "category": "breathing",
           "voiceScript": "看、聽、感覺。創傷病患額外注意：胸壁穩定性、對稱性、有無連枷胸或開放性傷口。",
           "keyPoints": [
             "暴露胸部觀察（必要時剪開衣物）",
@@ -349,6 +367,7 @@
           "id": "t09",
           "order": 9,
           "title": "循環（C）— 控制致命出血",
+          "category": "circulation",
           "voiceScript": "創傷的 C 第一優先是控制致命性出血。直接加壓、止血帶、骨盆束帶依部位選擇。同時評估脈搏與灌流。",
           "keyPoints": [
             "全身 blood sweep（含背部與下肢）",
@@ -368,6 +387,7 @@
           "id": "t10",
           "order": 10,
           "title": "重大創傷判斷",
+          "category": "general",
           "voiceScript": "依生理、解剖、機轉、特殊族群四大類判斷。符合任一條即為重大創傷。",
           "keyPoints": [
             "生理：意識、呼吸、循環異常",
@@ -387,6 +407,7 @@
           "id": "t11",
           "order": 11,
           "title": "決定運送優先",
+          "category": "general",
           "voiceScript": "重大創傷立即啟動 Load and Go，現場時間 10 分鐘內。送至創傷中心，途中完成詳細評估。",
           "keyPoints": [
             "現場時間目標 ≤ 10 分鐘",
