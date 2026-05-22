@@ -21,6 +21,78 @@ let studentVoiceUnlocked = false;
 // 大螢幕模式：忽略教官端的語音鎖、總是出聲
 let bigScreenMode = false;
 
+// ============= 語音設定（每台裝置獨立，存 localStorage） =============
+const VoiceSettings = (() => {
+  const KEY = 'ems-voice-settings';
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
+    catch { return {}; }
+  }
+
+  function save(voiceName, rate) {
+    localStorage.setItem(KEY, JSON.stringify({ voiceName, rate }));
+  }
+
+  function getRate() {
+    const r = load().rate;
+    return (typeof r === 'number') ? r : 0.95;
+  }
+
+  // 中文聲音優先順序：神經式 > 一般 > 隨便一個 zh
+  function pickBest(voices) {
+    if (!voices || !voices.length) return null;
+    const tests = [
+      v => /Hsiao-?Chen/i.test(v.name) && /Natural/i.test(v.name),
+      v => /Yating/i.test(v.name) && /Natural/i.test(v.name),
+      v => /HanHan/i.test(v.name) && /Natural/i.test(v.name),
+      v => /Natural|Neural/i.test(v.name) && /zh/i.test(v.lang),
+      v => /Hsiao-?Chen|Yating|HanHan/i.test(v.name),
+      v => /zh-TW/i.test(v.lang),
+      v => /zh/i.test(v.lang),
+    ];
+    for (const test of tests) {
+      const found = voices.find(test);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function getVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    const settings = load();
+    if (settings.voiceName) {
+      const found = voices.find(v => v.name === settings.voiceName);
+      if (found) return found;
+    }
+    return pickBest(voices);
+  }
+
+  // 等待瀏覽器把聲音清單載入完成（有些瀏覽器是非同步的）
+  function ensureLoaded() {
+    return new Promise((resolve) => {
+      const list = window.speechSynthesis.getVoices();
+      if (list.length > 0) { resolve(list); return; }
+      const handler = () => {
+        window.speechSynthesis.removeEventListener('voiceschanged', handler);
+        resolve(window.speechSynthesis.getVoices());
+      };
+      window.speechSynthesis.addEventListener('voiceschanged', handler);
+      // 1.5 秒後仍未載入也回傳空陣列，避免無限等
+      setTimeout(() => resolve(window.speechSynthesis.getVoices()), 1500);
+    });
+  }
+
+  return { load, save, getRate, getVoice, pickBest, ensureLoaded };
+})();
+
+window.VoiceSettings = VoiceSettings;
+
+// 預先觸發聲音清單載入
+if (window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+}
+
 // ============= 啟動 =============
 async function init() {
   try {
@@ -691,8 +763,9 @@ async function handleSyncMessage(msg) {
     window.speechSynthesis.cancel();
     if (window.__studentInteracted) {
       const u = new SpeechSynthesisUtterance(msg.voiceScript);
-      u.lang = 'zh-TW';
-      u.rate = 0.95;
+      const voice = VoiceSettings.getVoice();
+      if (voice) { u.voice = voice; u.lang = voice.lang; } else { u.lang = 'zh-TW'; }
+      u.rate = VoiceSettings.getRate();
       window.speechSynthesis.speak(u);
     } else {
       document.getElementById('sync-status').textContent = '🔇 請點畫面任一處解鎖音效';
@@ -723,6 +796,65 @@ function updateStudentLockIndicator() {
 
 // 學員第一次點任何位置後允許播語音
 document.addEventListener('click', () => { window.__studentInteracted = true; }, { once: true });
+
+// ============= 語音設定 UI =============
+async function openVoiceSettings() {
+  const voices = await VoiceSettings.ensureLoaded();
+  const zhVoices = voices.filter(v => /zh/i.test(v.lang));
+  const select = document.getElementById('voice-select');
+  const current = VoiceSettings.load().voiceName || (VoiceSettings.getVoice() || {}).name || '';
+
+  if (!zhVoices.length) {
+    select.innerHTML = '<option value="">(此裝置沒有中文聲音)</option>';
+  } else {
+    // 神經式聲音先排，較易分辨
+    zhVoices.sort((a, b) => {
+      const aNatural = /Natural|Neural/i.test(a.name) ? 0 : 1;
+      const bNatural = /Natural|Neural/i.test(b.name) ? 0 : 1;
+      return aNatural - bNatural;
+    });
+    select.innerHTML = zhVoices.map(v => {
+      const label = /Natural|Neural/i.test(v.name) ? `${v.name}  ⭐ 神經式` : v.name;
+      const sel = v.name === current ? 'selected' : '';
+      return `<option value="${v.name}" ${sel}>${escapeHtml(label)} — ${v.lang}</option>`;
+    }).join('');
+  }
+
+  const rate = VoiceSettings.getRate();
+  document.getElementById('voice-rate').value = rate;
+  document.getElementById('voice-rate-display').textContent = rate.toFixed(2);
+
+  document.getElementById('modal-voice').classList.remove('hidden');
+}
+
+function onVoiceRateInput() {
+  const v = parseFloat(document.getElementById('voice-rate').value);
+  document.getElementById('voice-rate-display').textContent = v.toFixed(2);
+}
+
+function testVoice() {
+  const text = document.getElementById('voice-test-text').value.trim();
+  if (!text) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  const selectedName = document.getElementById('voice-select').value;
+  const voice = window.speechSynthesis.getVoices().find(v => v.name === selectedName);
+  if (voice) { u.voice = voice; u.lang = voice.lang; } else { u.lang = 'zh-TW'; }
+  u.rate = parseFloat(document.getElementById('voice-rate').value);
+  window.speechSynthesis.speak(u);
+}
+
+function stopVoice() {
+  window.speechSynthesis.cancel();
+}
+
+function saveVoiceSettings() {
+  const voiceName = document.getElementById('voice-select').value;
+  const rate = parseFloat(document.getElementById('voice-rate').value);
+  VoiceSettings.save(voiceName, rate);
+  window.speechSynthesis.cancel();
+  closeModal('modal-voice');
+}
 
 // ============= 密碼閘 =============
 function showPasswordModal() {
@@ -972,3 +1104,8 @@ window.submitPassword = submitPassword;
 window.cancelPassword = cancelPassword;
 window.generatePasswordConfig = generatePasswordConfig;
 window.copySetupConfig = copySetupConfig;
+window.openVoiceSettings = openVoiceSettings;
+window.onVoiceRateInput = onVoiceRateInput;
+window.testVoice = testVoice;
+window.stopVoice = stopVoice;
+window.saveVoiceSettings = saveVoiceSettings;
