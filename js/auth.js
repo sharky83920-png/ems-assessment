@@ -6,6 +6,9 @@
 const Auth = (() => {
   let _hash = '';
   let _salt = '';
+  // 一次性通行旗標：tryUnlock 成功後設為 true，下一次 isUnlocked 檢查時消耗掉
+  // 設計目標：每次進入受保護角色都要重輸密碼，連同一個分頁切換角色也要
+  let _justUnlocked = false;
   const STORAGE_KEY = 'ems-auth-unlock';
 
   async function init() {
@@ -19,6 +22,8 @@ const Auth = (() => {
     } catch (e) {
       _hash = '';
     }
+    // 清掉舊版本可能留下的 localStorage 記住狀態
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
   }
 
   function isProtected() {
@@ -27,12 +32,11 @@ const Auth = (() => {
 
   function isUnlocked() {
     if (!isProtected()) return true;
-    try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      return stored.hash === _hash;
-    } catch {
-      return false;
+    if (_justUnlocked) {
+      _justUnlocked = false;
+      return true;
     }
+    return false;
   }
 
   async function sha256Hex(str) {
@@ -45,14 +49,15 @@ const Auth = (() => {
   async function tryUnlock(password) {
     const computed = await sha256Hex(_salt + ':' + password);
     if (computed === _hash) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ hash: _hash, when: Date.now() }));
+      _justUnlocked = true;
       return true;
     }
     return false;
   }
 
   function lock() {
-    localStorage.removeItem(STORAGE_KEY);
+    _justUnlocked = false;
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
   }
 
   async function generateConfig(password) {
