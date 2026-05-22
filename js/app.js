@@ -28,12 +28,14 @@ const state = {
   sync: null,
   broadcasting: true,
   voiceUtterance: null,
-  studentVoiceUnlocked: false, // 教官端控制：學員是否能朗讀（預設鎖定）
+  studentVoiceUnlocked: false,   // 教官端控制：學員手機是否會出聲（預設鎖定）
+  bigScreenVoiceEnabled: true,   // 教官端控制：大螢幕是否會出聲（預設開啟）
 };
 
-// 學員端記住的全域語音鎖狀態
+// 學員/大螢幕端記住的全域語音狀態（從教官端廣播同步過來）
 let studentVoiceUnlocked = false;
-// 大螢幕模式：忽略教官端的語音鎖、總是出聲
+let bigScreenVoiceEnabled = true;
+// 大螢幕模式：此裝置自己是不是大螢幕
 let bigScreenMode = false;
 
 // ============= 語音設定（每台裝置獨立，存 localStorage） =============
@@ -290,6 +292,8 @@ function enterRoom(role, roomCode) {
   if (role === 'admin') {
     document.getElementById('instructor-room-code').textContent = roomCode;
     showView('instructor');
+    updateVoiceLockButtons();
+    updateBigScreenVoiceButtons();
     renderStepList();
     if (!state.currentStepId) {
       const steps = getMergedSteps(state.protocolId);
@@ -303,6 +307,8 @@ function enterRoom(role, roomCode) {
       btn.classList.toggle('active', btn.dataset.protocol === state.protocolId);
     });
     showView('teach');
+    updateVoiceLockButtons();
+    updateBigScreenVoiceButtons();
     renderTeachDock();
     if (state.currentStepId) {
       updateTeachDockActive();
@@ -697,6 +703,7 @@ function broadcastCurrentStep(withVoice = false) {
     keyPoints: merged.keyPoints,
     commonErrors: merged.commonErrors,
     voiceUnlocked: state.studentVoiceUnlocked,
+    bigScreenVoiceEnabled: state.bigScreenVoiceEnabled,
   };
   if (withVoice && merged.voiceScript && merged.voiceScript.trim()) {
     payload.voiceScript = merged.voiceScript;
@@ -709,22 +716,45 @@ function broadcastCurrentStep(withVoice = false) {
 function toggleStudentVoiceLock() {
   state.studentVoiceUnlocked = !state.studentVoiceUnlocked;
   updateVoiceLockButtons();
-  // 立即廣播狀態變化（獨立訊息，學員無論在哪個步驟都會收到）
-  if (state.sync) {
-    state.sync.broadcast({
-      type: 'voice-mode',
-      voiceUnlocked: state.studentVoiceUnlocked,
-      ts: Date.now()
-    });
+  broadcastVoiceMode();
+}
+
+// 教官端：切換大螢幕語音
+function toggleBigScreenVoice() {
+  state.bigScreenVoiceEnabled = !state.bigScreenVoiceEnabled;
+  updateBigScreenVoiceButtons();
+  broadcastVoiceMode();
+  // 如果是切到靜音，把大螢幕當前正在播的也立刻停掉
+  if (!state.bigScreenVoiceEnabled && state.sync) {
+    state.sync.broadcast({ type: 'voice-stop', ts: Date.now() });
   }
+}
+
+function broadcastVoiceMode() {
+  if (!state.sync) return;
+  state.sync.broadcast({
+    type: 'voice-mode',
+    voiceUnlocked: state.studentVoiceUnlocked,
+    bigScreenVoiceEnabled: state.bigScreenVoiceEnabled,
+    ts: Date.now()
+  });
 }
 
 function updateVoiceLockButtons() {
   const unlocked = state.studentVoiceUnlocked;
-  document.querySelectorAll('.voice-lock-btn').forEach(btn => {
+  document.querySelectorAll('.student-voice-btn').forEach(btn => {
     btn.classList.toggle('unlocked', unlocked);
     btn.querySelector('.lock-icon').textContent = unlocked ? '🔓' : '🔒';
-    btn.querySelector('.lock-label').textContent = unlocked ? '學員語音：開啟' : '學員語音：鎖定';
+    btn.querySelector('.lock-label').textContent = unlocked ? '學員：開啟' : '學員：鎖定';
+  });
+}
+
+function updateBigScreenVoiceButtons() {
+  const on = state.bigScreenVoiceEnabled;
+  document.querySelectorAll('.bigscreen-voice-btn').forEach(btn => {
+    btn.classList.toggle('unlocked', on);
+    btn.querySelector('.lock-icon').textContent = on ? '🔊' : '🔇';
+    btn.querySelector('.lock-label').textContent = on ? '大螢幕：開啟' : '大螢幕：靜音';
   });
 }
 
@@ -732,10 +762,21 @@ function updateVoiceLockButtons() {
 async function handleSyncMessage(msg) {
   if (!msg) return;
 
-  // 語音鎖狀態變更
+  // 語音狀態變更
   if (msg.type === 'voice-mode') {
     studentVoiceUnlocked = !!msg.voiceUnlocked;
+    if (typeof msg.bigScreenVoiceEnabled === 'boolean') {
+      bigScreenVoiceEnabled = msg.bigScreenVoiceEnabled;
+    }
     updateStudentLockIndicator();
+    return;
+  }
+
+  // 教官按了「大螢幕靜音」時，立刻把當前正在念的停掉
+  if (msg.type === 'voice-stop') {
+    if (bigScreenMode) {
+      try { window.speechSynthesis.cancel(); } catch {}
+    }
     return;
   }
 
@@ -747,8 +788,11 @@ async function handleSyncMessage(msg) {
   // 每次 step 廣播也夾帶最新鎖狀態
   if (typeof msg.voiceUnlocked === 'boolean') {
     studentVoiceUnlocked = msg.voiceUnlocked;
-    updateStudentLockIndicator();
   }
+  if (typeof msg.bigScreenVoiceEnabled === 'boolean') {
+    bigScreenVoiceEnabled = msg.bigScreenVoiceEnabled;
+  }
+  updateStudentLockIndicator();
 
   document.getElementById('sync-status').textContent = '✅ 已連線';
   document.getElementById('sync-status').classList.add('connected');
@@ -780,9 +824,13 @@ async function handleSyncMessage(msg) {
     </div>
   `;
 
-  // 朗讀條件：①教官按了喇叭 ② 大螢幕無視鎖 / 學員手機需鎖打開 ③ 非「內容變動重新渲染」
-  const canPlay = msg.playVoice && msg.voiceScript && !msg._refresh &&
-                  (bigScreenMode || studentVoiceUnlocked);
+  // 朗讀條件：①教官按了喇叭 ② 非「內容變動重新渲染」
+  // ③ 大螢幕：需 bigScreenMode && 教官沒把大螢幕語音關掉
+  //    學員：需 bigScreenMode=false && 教官把學員鎖打開
+  const canPlay = msg.playVoice && msg.voiceScript && !msg._refresh && (
+    (bigScreenMode && bigScreenVoiceEnabled) ||
+    (!bigScreenMode && studentVoiceUnlocked)
+  );
   if (canPlay) {
     window.speechSynthesis.cancel();
     if (window.__studentInteracted) {
@@ -801,9 +849,15 @@ function updateStudentLockIndicator() {
   const status = document.getElementById('sync-status');
   if (!status) return;
   if (bigScreenMode) {
-    status.textContent = window.__studentInteracted
-      ? '📺 大螢幕模式 · 已連線'
-      : '📺 大螢幕模式 · 請點畫面解鎖音效';
+    let txt;
+    if (!bigScreenVoiceEnabled) {
+      txt = '📺 大螢幕 · 教官已靜音';
+    } else if (!window.__studentInteracted) {
+      txt = '📺 大螢幕 · 請點畫面解鎖音效';
+    } else {
+      txt = '📺 大螢幕 · 已連線';
+    }
+    status.textContent = txt;
     status.classList.add('connected');
     return;
   }
@@ -1127,6 +1181,7 @@ window.switchToTeach = switchToTeach;
 window.teachSwitchProtocol = teachSwitchProtocol;
 window.playStepVoice = playStepVoice;
 window.toggleStudentVoiceLock = toggleStudentVoiceLock;
+window.toggleBigScreenVoice = toggleBigScreenVoice;
 window.exportData = exportData;
 window.importData = importData;
 window.unlockBigscreenAudio = unlockBigscreenAudio;
