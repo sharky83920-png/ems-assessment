@@ -436,9 +436,15 @@ function getCurrentStep() {
 }
 
 // 合併編輯後內容
+// 防呆：keyPoints / commonErrors 永遠回陣列，且過濾空白字串（用來繞過 Firebase 刪空陣列的佔位符）
 function getMergedStep(step) {
   const edits = Storage.getStepEdits()[step.id] || {};
-  return { ...step, ...edits };
+  const merged = { ...step, ...edits };
+  merged.keyPoints = (Array.isArray(merged.keyPoints) ? merged.keyPoints : [])
+    .filter(s => typeof s === 'string' && s.trim());
+  merged.commonErrors = (Array.isArray(merged.commonErrors) ? merged.commonErrors : [])
+    .filter(s => typeof s === 'string' && s.trim());
+  return merged;
 }
 
 async function renderStepDetail() {
@@ -1019,7 +1025,9 @@ async function saveStepEdits() {
 
   if (title) Storage.saveStepEdit(editingStepId, 'title', title);
   if (keyPoints.length) Storage.saveStepEdit(editingStepId, 'keyPoints', keyPoints);
-  Storage.saveStepEdit(editingStepId, 'commonErrors', commonErrors); // 允許清空
+  // 允許清空：空陣列改存 [' '] 佔位符，Firebase 才不會把整個欄位吃掉
+  // 讀回時 getMergedStep 會過濾掉空白字串，畫面不會看到佔位符
+  Storage.saveStepEdit(editingStepId, 'commonErrors', commonErrors.length ? commonErrors : [' ']);
   if (script) Storage.saveStepEdit(editingStepId, 'voiceScript', script);
 
   closeModal('modal-edit-media');
