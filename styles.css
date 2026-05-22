@@ -1317,3 +1317,32 @@ input[type="file"] {
   border-color: var(--primary);
   outline: none;
 }
+
+#modal-voice select,
+#modal-voice textarea,
+#modal-voice input[type=range] {
+  width: 100%;
+  padding: 0.6rem;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+#modal-voice input[type=range] {
+  padding: 0;
+  height: 1.5rem;
+  accent-color: var(--primary);
+}
+
+#modal-voice select:focus,
+#modal-voice textarea:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+#modal-voice textarea {
+  resize: vertical;
+}
