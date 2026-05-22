@@ -730,9 +730,9 @@ code {
 }
 
 .dock-cell:hover {
-  background: #475569;
   color: var(--text);
   transform: translateY(-2px);
+  filter: brightness(1.15);
   box-shadow: 0 6px 12px rgba(0,0,0,0.3), inset 0 -3px 0 rgba(0,0,0,0.25);
 }
 
@@ -741,19 +741,43 @@ code {
   box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 -1px 0 rgba(0,0,0,0.25);
 }
 
+/* 選中狀態：保留分類底色，用外框＋光暈標示，不再覆蓋背景 */
 .dock-cell.active {
-  background: var(--primary);
-  color: white;
-  border-color: rgba(255,255,255,0.4);
   transform: scale(1.06);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.5), inset 0 -3px 0 rgba(0,0,0,0.25);
+  border-color: rgba(255,255,255,0.85);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.5), 0 10px 22px rgba(0,0,0,0.55), inset 0 -3px 0 rgba(0,0,0,0.25);
   z-index: 1;
+  filter: brightness(1.1) saturate(1.1);
 }
 
-.dock-cell.trauma.active {
-  background: var(--danger);
-  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.5), inset 0 -3px 0 rgba(0,0,0,0.25);
-}
+/* ============= 步驟分類底色 ============= */
+.dock-cell.cat-general    { background: linear-gradient(135deg, #475569 0%, #334155 100%); color: #f1f5f9; }
+.dock-cell.cat-airway     { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #fff; }
+.dock-cell.cat-breathing  { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #fff; }
+.dock-cell.cat-circulation{ background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: #fff; }
+.dock-cell.cat-neuro      { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); color: #1e293b; }
+.dock-cell.cat-exposure   { background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%); color: #1e293b; }
+.dock-cell.cat-other      { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); color: #fff; }
+
+/* 暴露白底：喇叭按鈕需要深底才看得到 */
+.dock-cell.cat-exposure .dock-cell-voice { background: rgba(0,0,0,0.25); color: #1e293b; }
+.dock-cell.cat-neuro .dock-cell-voice    { background: rgba(0,0,0,0.25); color: #1e293b; }
+
+/* 側欄分類色（左邊 3px 條條） */
+.step-item.cat-general    { border-left-color: #64748b; }
+.step-item.cat-airway     { border-left-color: #3b82f6; }
+.step-item.cat-breathing  { border-left-color: #16a34a; }
+.step-item.cat-circulation{ border-left-color: #dc2626; }
+.step-item.cat-neuro      { border-left-color: #fbbf24; }
+.step-item.cat-exposure   { border-left-color: #e2e8f0; }
+.step-item.cat-other      { border-left-color: #a855f7; }
+
+.step-item.cat-airway     .step-num { background: #3b82f6; color: #fff; }
+.step-item.cat-breathing  .step-num { background: #16a34a; color: #fff; }
+.step-item.cat-circulation .step-num{ background: #dc2626; color: #fff; }
+.step-item.cat-neuro      .step-num { background: #fbbf24; color: #1e293b; }
+.step-item.cat-exposure   .step-num { background: #e2e8f0; color: #1e293b; }
+.step-item.cat-other      .step-num { background: #a855f7; color: #fff; }
 
 .dock-cell-num {
   font-size: 1.6rem;
@@ -1107,6 +1131,22 @@ code {
   margin-bottom: 0.5rem;
   font-weight: 500;
   color: var(--text-dim);
+}
+
+.form-row select {
+  width: 100%;
+  padding: 0.6rem;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.form-row select:focus {
+  border-color: var(--primary);
+  outline: none;
 }
 
 .media-preview {
