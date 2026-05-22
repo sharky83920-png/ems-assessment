@@ -4,6 +4,21 @@
 //   #/i/XXXX   教官端（XXXX 為教室代碼）
 //   #/s/XXXX   學員端
 
+// ============= 步驟分類（ABCDE + 通用 + 其他） =============
+const CATEGORIES = [
+  { key: 'general',     label: '通用流程' },
+  { key: 'airway',      label: '呼吸道 (A)' },
+  { key: 'breathing',   label: '呼吸 (B)' },
+  { key: 'circulation', label: '循環 (C)' },
+  { key: 'neuro',       label: '神經 (D)' },
+  { key: 'exposure',    label: '暴露 (E)' },
+  { key: 'other',       label: '其他' },
+];
+const CATEGORY_KEYS = new Set(CATEGORIES.map(c => c.key));
+function categoryClass(cat) {
+  return 'cat-' + (CATEGORY_KEYS.has(cat) ? cat : 'general');
+}
+
 let PROTOCOLS = null;
 const state = {
   role: null,          // 'admin' | 'teach' | 'student'
@@ -96,7 +111,7 @@ if (window.speechSynthesis) {
 // ============= 啟動 =============
 async function init() {
   try {
-    const res = await fetch('data/protocols.json');
+    const res = await fetch('data/protocols.json?_=' + Date.now());
     PROTOCOLS = await res.json();
   } catch (e) {
     alert('無法載入 protocols.json：' + e.message);
@@ -332,8 +347,9 @@ function renderStepList() {
   const isTrauma = state.protocolId === 'trauma';
   list.innerHTML = steps.map((step, idx) => {
     const merged = getMergedStep(step);
+    const catCls = categoryClass(merged.category);
     return `
-      <li class="step-item ${isTrauma ? 'trauma' : ''}" data-step-id="${step.id}">
+      <li class="step-item ${isTrauma ? 'trauma' : ''} ${catCls}" data-step-id="${step.id}">
         <span class="step-num">${step.order}</span>
         <span class="step-title-small" onclick="selectStep('${step.id}')">${escapeHtml(merged.title)}</span>
         <span class="step-actions">
@@ -372,8 +388,9 @@ function renderTeachDock() {
   dock.innerHTML = steps.map(s => {
     const merged = getMergedStep(s);
     const hasVoice = !!(merged.voiceScript && merged.voiceScript.trim());
+    const catCls = categoryClass(merged.category);
     return `
-      <div class="dock-cell ${isTrauma ? 'trauma' : ''}" role="button" tabindex="0"
+      <div class="dock-cell ${isTrauma ? 'trauma' : ''} ${catCls}" role="button" tabindex="0"
            data-step-id="${s.id}"
            onclick="selectStep('${s.id}')"
            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectStep('${s.id}')}">
@@ -523,6 +540,7 @@ function addNewStep() {
     id: newId,
     order: 999,
     title: '新步驟（請編輯）',
+    category: 'general',
     voiceScript: '',
     keyPoints: [],
     commonErrors: [],
@@ -979,6 +997,7 @@ async function openMediaEditor(stepId) {
   const merged = getMergedStep(step);
   document.getElementById('edit-step-title-display').textContent = merged.title;
   document.getElementById('edit-title').value = merged.title;
+  document.getElementById('edit-category').value = CATEGORY_KEYS.has(merged.category) ? merged.category : 'general';
   document.getElementById('edit-key-points').value = merged.keyPoints.join('\n');
   document.getElementById('edit-common-errors').value = merged.commonErrors.join('\n');
   document.getElementById('edit-voice-script').value = merged.voiceScript;
@@ -1023,7 +1042,10 @@ async function saveStepEdits() {
     .split('\n').map(s => s.trim()).filter(Boolean);
   const script = document.getElementById('edit-voice-script').value.trim();
 
+  const category = document.getElementById('edit-category').value;
+
   if (title) Storage.saveStepEdit(editingStepId, 'title', title);
+  Storage.saveStepEdit(editingStepId, 'category', CATEGORY_KEYS.has(category) ? category : 'general');
   if (keyPoints.length) Storage.saveStepEdit(editingStepId, 'keyPoints', keyPoints);
   // 允許清空：空陣列改存 [' '] 佔位符，Firebase 才不會把整個欄位吃掉
   // 讀回時 getMergedStep 會過濾掉空白字串，畫面不會看到佔位符
