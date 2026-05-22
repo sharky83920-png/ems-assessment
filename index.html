@@ -39,6 +39,59 @@
 
       <div class="home-footer">
         <small id="sync-mode-indicator">同步模式偵測中...</small>
+        <small id="auth-status" class="auth-status">🔐 密碼狀態檢查中...</small>
+        <small><a href="#/setup" class="setup-link">🔐 設定／變更密碼</a></small>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= 教官密碼設定頁 ============= -->
+  <div id="view-setup" class="view hidden">
+    <div class="home-card">
+      <h1>🔐 設定教官密碼</h1>
+      <p class="subtitle">教官·後台、教官·上課、大螢幕 三個角色都需要此密碼<br>學員手機 (#/s/) 不需要</p>
+
+      <div class="form-row">
+        <label>新密碼（至少 4 字元）</label>
+        <input type="password" id="setup-pw1" autocomplete="new-password" />
+      </div>
+      <div class="form-row">
+        <label>再次輸入</label>
+        <input type="password" id="setup-pw2" autocomplete="new-password" />
+      </div>
+      <div id="setup-error" class="form-error"></div>
+
+      <div class="modal-actions">
+        <button class="ctrl-btn" onclick="location.hash='#/'">取消</button>
+        <button class="ctrl-btn primary" onclick="generatePasswordConfig()">產生 GitHub 設定</button>
+      </div>
+
+      <div id="setup-result" class="hidden">
+        <hr style="border-color: var(--border); margin: 1.5rem 0;" />
+        <h3>下一步：把這段內容貼到 GitHub</h3>
+        <ol class="setup-steps">
+          <li>進 <a href="https://github.com/sharky83920-png/ems-assessment/blob/main/auth.json" target="_blank">auth.json（點此開）</a></li>
+          <li>點右上鉛筆圖示「Edit this file」</li>
+          <li>把檔案內容<strong>整段換成</strong>下方這段：</li>
+        </ol>
+        <pre id="setup-output" class="code-block"></pre>
+        <button class="ctrl-btn primary" onclick="copySetupConfig()">📋 複製設定</button>
+        <p style="margin-top:1rem"><small>4. Commit changes，等 1 分鐘部署完，刷新本頁，密碼就生效。</small></p>
+        <p><small style="color:var(--warning)">⚠️ 別忘了把<strong>明文密碼</strong>抄到你的 vault 私人備忘：<code>工具欄/ems-assessment 密碼.md</code></small></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============= 教官密碼輸入彈窗 ============= -->
+  <div id="modal-password" class="modal hidden">
+    <div class="modal-card">
+      <h2>🔐 教官密碼</h2>
+      <p style="color:var(--text-dim);margin-bottom:1rem">進入此角色需要教官密碼</p>
+      <input type="password" id="password-input" placeholder="輸入密碼" autocomplete="current-password" />
+      <div id="password-error" class="form-error"></div>
+      <div class="modal-actions">
+        <button class="ctrl-btn" onclick="cancelPassword()">取消</button>
+        <button class="ctrl-btn primary" onclick="submitPassword()">解鎖</button>
       </div>
     </div>
   </div>
@@ -245,6 +298,7 @@
   <script src="js/content-sync.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/sync.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
