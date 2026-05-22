@@ -136,11 +136,15 @@
         <button class="ghost-btn" onclick="showJoinInfo()">學員加入資訊</button>
       </div>
       <div class="topbar-right">
-        <button class="voice-lock-btn" onclick="toggleStudentVoiceLock()" title="統一控制所有學員的語音播放">
+        <button class="voice-lock-btn student-voice-btn" onclick="toggleStudentVoiceLock()" title="統一控制學員手機的語音播放">
           <span class="lock-icon">🔒</span>
-          <span class="lock-label">學員語音：鎖定</span>
+          <span class="lock-label">學員：鎖定</span>
         </button>
-        <button class="ghost-btn" onclick="openVoiceSettings()" title="設定 TTS 聲音與語速">🔊 語音</button>
+        <button class="voice-lock-btn unlocked bigscreen-voice-btn" onclick="toggleBigScreenVoice()" title="統一控制大螢幕的語音播放">
+          <span class="lock-icon">🔊</span>
+          <span class="lock-label">大螢幕：開啟</span>
+        </button>
+        <button class="ghost-btn" onclick="openVoiceSettings()" title="選擇 TTS 聲音與語速">⚙️ TTS</button>
         <button class="ghost-btn" onclick="exportData()">匯出</button>
         <button class="ghost-btn" onclick="importData()">匯入</button>
         <input type="file" id="import-file" accept=".json" hidden />
@@ -187,11 +191,15 @@
         </div>
       </div>
       <div class="teach-topbar-right">
-        <button class="voice-lock-btn" onclick="toggleStudentVoiceLock()" title="統一控制所有學員的語音播放">
+        <button class="voice-lock-btn student-voice-btn" onclick="toggleStudentVoiceLock()" title="統一控制學員手機的語音播放">
           <span class="lock-icon">🔒</span>
-          <span class="lock-label">學員語音：鎖定</span>
+          <span class="lock-label">學員：鎖定</span>
         </button>
-        <button class="ghost-btn" onclick="openVoiceSettings()" title="設定 TTS 聲音與語速">🔊 語音</button>
+        <button class="voice-lock-btn unlocked bigscreen-voice-btn" onclick="toggleBigScreenVoice()" title="統一控制大螢幕的語音播放">
+          <span class="lock-icon">🔊</span>
+          <span class="lock-label">大螢幕：開啟</span>
+        </button>
+        <button class="ghost-btn" onclick="openVoiceSettings()" title="選擇 TTS 聲音與語速">⚙️ TTS</button>
         <button class="ghost-btn" onclick="showJoinInfo()">學員加入</button>
         <button class="ghost-btn" onclick="switchToAdmin()">⚙️ 後台</button>
         <button class="ghost-btn danger" onclick="leaveRoom()">離開</button>
