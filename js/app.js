@@ -193,6 +193,10 @@ function enterRoom(role, roomCode) {
     bigScreenMode = (role === 'bigscreen');
     document.getElementById('student-room-code').textContent = roomCode;
     document.body.classList.toggle('mode-bigscreen', bigScreenMode);
+    const unlockOverlay = document.getElementById('bigscreen-unlock');
+    if (unlockOverlay) {
+      unlockOverlay.classList.toggle('hidden', !bigScreenMode || window.__studentInteracted);
+    }
     showView('student');
     state.sync.onMessage(handleSyncMessage);
   }
@@ -687,6 +691,20 @@ function updateStudentLockIndicator() {
 // 學員第一次點任何位置後允許播語音
 document.addEventListener('click', () => { window.__studentInteracted = true; }, { once: true });
 
+// 大螢幕：點覆蓋層按鈕解鎖音訊（必須在 click handler 內同步觸發 speechSynthesis 才算合法解鎖）
+function unlockBigscreenAudio() {
+  window.__studentInteracted = true;
+  try {
+    const warmup = new SpeechSynthesisUtterance(' ');
+    warmup.volume = 0;
+    warmup.lang = 'zh-TW';
+    window.speechSynthesis.speak(warmup);
+  } catch (e) {}
+  const overlay = document.getElementById('bigscreen-unlock');
+  if (overlay) overlay.classList.add('hidden');
+  updateStudentLockIndicator();
+}
+
 // ============= 加入資訊（QR & URL） =============
 function showJoinInfo() {
   const base = location.href.split('#')[0];
@@ -854,3 +872,4 @@ window.playStepVoice = playStepVoice;
 window.toggleStudentVoiceLock = toggleStudentVoiceLock;
 window.exportData = exportData;
 window.importData = importData;
+window.unlockBigscreenAudio = unlockBigscreenAudio;
