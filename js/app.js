@@ -30,6 +30,9 @@ async function init() {
     alert('無法載入 protocols.json：' + e.message);
     return;
   }
+  // 載入密碼設定
+  await Auth.init();
+  updateHomeAuthStatus();
   // 啟動內容同步（會自動接 Firebase 或退回 local）
   ContentSync.init();
   // 當內容雲端變動時，重新渲染目前畫面 + 推送給學員
@@ -87,6 +90,14 @@ async function init() {
 
 function routeFromHash() {
   const hash = location.hash || '#/';
+  if (hash === '#/setup') {
+    document.getElementById('setup-pw1').value = '';
+    document.getElementById('setup-pw2').value = '';
+    document.getElementById('setup-error').textContent = '';
+    document.getElementById('setup-result').classList.add('hidden');
+    showView('setup');
+    return;
+  }
   const m = hash.match(/^#\/([istb])\/([A-Z0-9]{4})$/);
   if (m) {
     const roleMap = { i: 'admin', t: 'teach', s: 'student', b: 'bigscreen' };
@@ -94,14 +105,27 @@ function routeFromHash() {
     const room = m[2];
     enterRoom(role, room);
   } else {
+    updateHomeAuthStatus();
     showView('home');
   }
 }
 
 function showView(name) {
-  ['home', 'instructor', 'teach', 'student'].forEach(v => {
+  ['home', 'instructor', 'teach', 'student', 'setup'].forEach(v => {
     document.getElementById(`view-${v}`).classList.toggle('hidden', v !== name);
   });
+}
+
+function updateHomeAuthStatus() {
+  const el = document.getElementById('auth-status');
+  if (!el) return;
+  if (Auth.isProtected()) {
+    el.textContent = '🔐 已啟用密碼保護';
+    el.classList.remove('warning');
+  } else {
+    el.textContent = '⚠️ 尚未設定密碼 — 任何人都能進入後台';
+    el.classList.add('warning');
+  }
 }
 
 // ============= 進入角色 =============
@@ -157,7 +181,16 @@ function closeModal(id) {
   document.getElementById(id).classList.add('hidden');
 }
 
+let pendingEntry = null;
+
 function enterRoom(role, roomCode) {
+  // 密碼閘：admin / teach / bigscreen 必須先解鎖
+  const protectedRoles = ['admin', 'teach', 'bigscreen'];
+  if (protectedRoles.includes(role) && Auth.isProtected() && !Auth.isUnlocked()) {
+    pendingEntry = { role, roomCode };
+    showPasswordModal();
+    return;
+  }
   // 切換模式時重用同一個 sync（避免斷線）
   if (state.sync && state.roomCode !== roomCode) {
     state.sync.destroy();
@@ -691,6 +724,68 @@ function updateStudentLockIndicator() {
 // 學員第一次點任何位置後允許播語音
 document.addEventListener('click', () => { window.__studentInteracted = true; }, { once: true });
 
+// ============= 密碼閘 =============
+function showPasswordModal() {
+  document.getElementById('password-input').value = '';
+  document.getElementById('password-error').textContent = '';
+  document.getElementById('modal-password').classList.remove('hidden');
+  setTimeout(() => document.getElementById('password-input').focus(), 50);
+  const input = document.getElementById('password-input');
+  input.onkeydown = (e) => { if (e.key === 'Enter') submitPassword(); };
+}
+
+async function submitPassword() {
+  const pw = document.getElementById('password-input').value;
+  if (!pw) return;
+  const ok = await Auth.tryUnlock(pw);
+  if (ok) {
+    closeModal('modal-password');
+    if (pendingEntry) {
+      const { role, roomCode } = pendingEntry;
+      pendingEntry = null;
+      enterRoom(role, roomCode);
+    }
+  } else {
+    document.getElementById('password-error').textContent = '❌ 密碼錯誤';
+    document.getElementById('password-input').select();
+  }
+}
+
+function cancelPassword() {
+  closeModal('modal-password');
+  pendingEntry = null;
+  location.hash = '#/';
+}
+
+// ============= Setup 頁：產生 auth.json 設定 =============
+async function generatePasswordConfig() {
+  const pw1 = document.getElementById('setup-pw1').value;
+  const pw2 = document.getElementById('setup-pw2').value;
+  const errEl = document.getElementById('setup-error');
+  errEl.textContent = '';
+
+  if (!pw1 || pw1.length < 4) {
+    errEl.textContent = '❌ 密碼至少 4 個字元';
+    return;
+  }
+  if (pw1 !== pw2) {
+    errEl.textContent = '❌ 兩次輸入不一致';
+    return;
+  }
+  const cfg = await Auth.generateConfig(pw1);
+  const json = JSON.stringify(cfg, null, 2);
+  document.getElementById('setup-output').textContent = json;
+  document.getElementById('setup-result').classList.remove('hidden');
+}
+
+function copySetupConfig() {
+  const json = document.getElementById('setup-output').textContent;
+  navigator.clipboard.writeText(json).then(
+    () => alert('已複製。請貼到 GitHub 的 auth.json 並 Commit。'),
+    () => alert('複製失敗，請手動選取下方文字')
+  );
+}
+
 // 大螢幕：點覆蓋層按鈕解鎖音訊（必須在 click handler 內同步觸發 speechSynthesis 才算合法解鎖）
 function unlockBigscreenAudio() {
   window.__studentInteracted = true;
@@ -873,3 +968,7 @@ window.toggleStudentVoiceLock = toggleStudentVoiceLock;
 window.exportData = exportData;
 window.importData = importData;
 window.unlockBigscreenAudio = unlockBigscreenAudio;
+window.submitPassword = submitPassword;
+window.cancelPassword = cancelPassword;
+window.generatePasswordConfig = generatePasswordConfig;
+window.copySetupConfig = copySetupConfig;
