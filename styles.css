@@ -1174,3 +1174,74 @@ input[type="file"] {
   padding: 1rem;
   margin-top: 0.5rem;
 }
+
+/* ============= 大螢幕音訊解鎖覆蓋層 ============= */
+.bigscreen-unlock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, 0.97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.bigscreen-unlock-overlay.hidden { display: none; }
+
+.bigscreen-unlock-card {
+  background: var(--bg-card);
+  border: 2px solid #a855f7;
+  border-radius: 16px;
+  padding: 3rem 2.5rem;
+  text-align: center;
+  max-width: 520px;
+  box-shadow: 0 20px 60px rgba(168, 85, 247, 0.35);
+}
+
+.bigscreen-unlock-icon {
+  font-size: 5rem;
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.bigscreen-unlock-card h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: var(--text);
+}
+
+.bigscreen-unlock-card p {
+  color: var(--text-dim);
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.bigscreen-unlock-btn {
+  background: #a855f7;
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 700;
+  padding: 1rem 3rem;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+  margin-bottom: 1.5rem;
+}
+
+.bigscreen-unlock-btn:hover {
+  background: #9333ea;
+  transform: translateY(-1px);
+}
+
+.bigscreen-unlock-btn:active {
+  transform: translateY(0);
+}
+
+.bigscreen-unlock-card small {
+  color: var(--text-dim);
+  display: block;
+  font-size: 0.9rem;
+}
